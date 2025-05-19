@@ -398,23 +398,41 @@ from torch.utils.data import random_split, DataLoader
 # Set random seed for reproducibility
 torch.manual_seed(424)
 
-# Calculate split sizes (80% train, 20% test)
-total_size = len(dataset_expert1)
+# Combine datasets from both experts
+combined_dataset = combine_expert_datasets(dataset_expert1, dataset_expert2)
+
+# Calculate split sizes for combined dataset
+total_size = len(combined_dataset)
 train_size = int(0.8 * total_size)
 test_size = total_size - train_size
 
-# Split the dataset
-train_dataset, test_dataset = random_split(dataset_expert1, [train_size, test_size])
+# Split the combined dataset
+train_dataset, test_dataset = random_split(
+    combined_dataset, 
+    [train_size, test_size],
+    generator=torch.Generator().manual_seed(424)
+)
 
-# Create data loaders
+# Create data loaders with the combined dataset
 batch_size = 32
 train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
 test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False)
 
-logger.info(f"\nDataset split:")
+logger.info(f"\nCombined Dataset Split:")
 logger.info(f"Total samples: {total_size}")
 logger.info(f"Training samples: {len(train_dataset)}")
 logger.info(f"Test samples: {len(test_dataset)}")
+
+# Save dataset statistics
+dataset_stats = {
+    'total_samples': total_size,
+    'train_samples': len(train_dataset),
+    'test_samples': len(test_dataset),
+    'classes': combined_dataset.classes
+}
+
+with open('results/visualizations/dataset_statistics.json', 'w') as f:
+    json.dump(dataset_stats, f, indent=4)
 
 # Initialize model with clinical priorities
 # Weights for boundaries between classes (4 boundaries for 5 classes)
